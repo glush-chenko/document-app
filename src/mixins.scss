@@ -1,0 +1,40 @@
+@mixin file-manager-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+
+  position: relative;
+
+  transition: background-color 200ms;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
+  svg {
+    color: #9f9f9f;
+    transition: color 200ms;
+    background-color: white;
+    border-radius: .25rem;
+  }
+
+  &.active {
+    background-color: rgba(225, 225, 225, 0.55);
+
+    svg {
+      color: #4273f6;
+      background-color: white;
+      border-radius: 0;
+    }
+  }
+
+  &:hover {
+    background-color: rgba(218, 218, 218, 0.55);
+    border-radius: 0.5rem;
+  }
+}
+
