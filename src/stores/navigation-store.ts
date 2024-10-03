@@ -1,30 +1,22 @@
-import { makeAutoObservable } from 'mobx';
-import {Category} from "../types/category";
-import {Document} from "../types/document";
+import {action, computed, makeAutoObservable} from 'mobx';
+import {fileManagerStore} from "./file-manager-store";
 
-class CategoryStore {
-    categories: Category[] = [];
-    documents: Document[] = [];
+export enum VIEW_TYPES {
+    ALL_DOCUMENTS = "ALL_DOCUMENTS",
+    ALL_CATEGORIES = "ALL_CATEGORIES",
+}
+
+class NavigationStore {
+    currentView = VIEW_TYPES.ALL_CATEGORIES;
 
     constructor() {
         makeAutoObservable(this);
     }
 
-    setCategories(categories: Category[]) {
-        this.categories = categories;
-    }
-
-    setDocuments(documents: Document[]) {
-        this.documents = documents;
-    }
-
-    getDocumentsByCategoryId(categoryId: string) {
-        return this.documents.filter(doc => doc.categoryId === categoryId);
-    }
-
-    getDocumentById(documentId: string) {
-        return this.documents.find(doc => doc.id === documentId) || null;
+    setCurrentView(newView: VIEW_TYPES) {
+        this.currentView = newView;
     }
 }
 
-export const categoryStore = new CategoryStore();
+export const navigationStore = new NavigationStore();
+(window as any).navigationStore  = navigationStore;

@@ -1,7 +1,10 @@
 export interface Document {
     id: string;
     name: string;
-    categoryId: string;
+    category: string;
+    preview: string;
     url: string;
     path: string;
+    created: string;
+    type: 'file';
 }
