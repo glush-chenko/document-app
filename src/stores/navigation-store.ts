@@ -1,5 +1,4 @@
-import {action, computed, makeAutoObservable} from 'mobx';
-import {fileManagerStore} from "./file-manager-store";
+import {makeAutoObservable} from 'mobx';
 
 export enum VIEW_TYPES {
     ALL_DOCUMENTS = "ALL_DOCUMENTS",

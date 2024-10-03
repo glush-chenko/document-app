@@ -1,0 +1,22 @@
+@import "../styled/colors";
+
+.root-container {
+  display: flex;
+  flex-grow: 1;
+
+  padding: 1rem;
+  background-color: $main-background-color;
+
+  .breadcrumb-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    padding: 1rem;
+    box-shadow: 0 0 2px rgba(58, 66, 75, .1), 0 2px 4px rgba(58, 66, 75, .2);
+    background-color: $secondary-color-bright;
+    width: 100%;
+    border-radius: 1rem;
+    // height: "100%"
+  }
+}
