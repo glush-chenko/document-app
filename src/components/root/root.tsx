@@ -1,68 +1,66 @@
-import React from "react";
-import {Outlet} from "react-router-dom";
+import React, {useCallback, useEffect} from "react";
+import {Outlet, useParams} from "react-router-dom";
 import {observer} from "mobx-react-lite";
 import {Navigation} from "../header-nav/navigation";
-import {Typography} from "@mui/material";
-import Link from '@mui/material/Link';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import Breadcrumbs from '@mui/material/Breadcrumbs';
-import {fileManagerStore} from "../../stores/file-manager-store";
+import {fileManagerStore, FileObj} from "../../stores/file-manager-store";
 import "./root-style.scss"
-
-export interface breadcrumbItemsProps {
-    label: string;
-    href: string;
-    isLast: boolean;
-}
+import {breadcrumbItemsProps, CustomBreadcrumbs} from "../breadcrumbs/custom-breadcrumbs";
+import {LeftPanel} from "../left-panel/left-panel";
+import {DndProvider} from 'react-dnd'
+import {HTML5Backend} from 'react-dnd-html5-backend'
+import {AsynchronousAutocomplete} from "../styled/asynchronous-autocomplete";
+import {fetchFiles} from "../../services/yandex-disk-api";
 
 export const Root = observer(() => {
-    const currentCategory = fileManagerStore.currentCategory;
+    const currentCategory = fileManagerStore.currentCategoryPath;
 
-    const breadcrumbItems: breadcrumbItemsProps[] = [
-        {
-            label: 'CaseLabDocuments',
-            href: '/CaseLabDocuments',
-            isLast: !currentCategory
+    useEffect(() => {
+        (async () => {
+            const categories = await fetchFiles();
+
+            fileManagerStore.setFilesByPath("/", categories);
+        })()
+    }, []);
+
+    const generateBreadcrumbItems = useCallback((currentCategory: string | null) => {
+        const breadcrumbItems: breadcrumbItemsProps[] = [
+            {
+                label: 'CaseLabDocuments',
+                href: '/CaseLabDocuments',
+                isLast: !currentCategory
+            }
+        ];
+
+        if (currentCategory) {
+            const categories = currentCategory.split('/');
+
+            categories.forEach((category, index) => {
+                const categoryPath = categories.slice(0, index + 1).join('/');
+                breadcrumbItems.push({
+                    label: decodeURIComponent(category.replace(/-/g, ' ')),
+                    href: `/CaseLabDocuments/categories/${categoryPath}`,
+                    isLast: index === categories.length - 1
+                });
+            });
         }
-    ];
 
-    if (currentCategory) {
-        breadcrumbItems.push({
-            label: decodeURIComponent(currentCategory.replace(/-/g, ' ')),
-            href: `/CaseLabDocuments/categories/${currentCategory}`,
-            isLast: true
-        });
-    }
+        return breadcrumbItems;
+    }, [currentCategory]);
 
     return (
         <>
-            <Navigation/>
+            <div className="root-nav">
+                <Navigation/>
+            </div>
             <div className="root-container">
-                <div className="breadcrumb-container">
-                    <Breadcrumbs
-                        separator={<NavigateNextIcon fontSize="small"/>}
-                        aria-label="breadcrumb"
-                        className="breadcrumbs"
-                    >
-                        {breadcrumbItems.map((item, index) => (
-                            item.isLast ? (
-                                <Typography key={index} className="breadcrumb-item last">
-                                    {item.label}
-                                </Typography>
-                            ) : (
-                                <Link
-                                    key={index}
-                                    underline="hover"
-                                    color="inherit"
-                                    href={item.href}
-                                    className="breadcrumb-item"
-                                >
-                                    {item.label}
-                                </Link>
-                            )
-                        ))}
-                    </Breadcrumbs>
-                    <Outlet/>
+                <div className="main-container">
+                    <DndProvider backend={HTML5Backend}>
+                        <LeftPanel/>
+                    </DndProvider>
+                    <div className="content-container">
+                        <CustomBreadcrumbs items={generateBreadcrumbItems(currentCategory)}/>
+                        <Outlet/>
+                    </div>
                 </div>
             </div>
         </>

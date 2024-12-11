@@ -1,5 +1,13 @@
 @import "../styled/colors";
 
+.root-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  padding: 0 1rem;
+}
+
 .root-container {
   display: flex;
   flex-grow: 1;
@@ -7,16 +15,20 @@
   padding: 1rem;
   background-color: $main-background-color;
 
-  .breadcrumb-container {
+  .main-container {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
 
-    padding: 1rem;
     box-shadow: 0 0 2px rgba(58, 66, 75, .1), 0 2px 4px rgba(58, 66, 75, .2);
     background-color: $secondary-color-bright;
     width: 100%;
     border-radius: 1rem;
-    // height: "100%"
+
+    .content-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      padding: 1rem;
+    }
   }
 }

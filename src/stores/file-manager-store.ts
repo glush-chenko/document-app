@@ -1,32 +1,48 @@
-import {makeAutoObservable} from 'mobx';
+import { makeAutoObservable, ObservableMap} from 'mobx';
 import {Category} from "../types/category";
 import {Document} from "../types/document";
-import {TrashItem} from "../types/folder";
+
+export type File = Document | Category;
+
+export interface FileObj {
+    id: string;
+    name: string;
+    category?: string;
+    preview?: string;
+    url?: string;
+    path: string;
+    created: string;
+    type: 'file' | 'dir';
+    items: FileObj[]
+}
 
 class FileManagerStore {
-    categories: Category[] = [];
-    documents: Document[] = [];
-    trashItems: TrashItem[] = [];
-    currentCategory: string = '';
+    categories: File[] = [];
+    documents: File[] = [];
+    files: Map<string, FileObj[]> = new Map();
+    trashItems: FileObj[] = [];
+    currentCategoryPath = '';
     selectedItemsIds: string[] = []; //Categories or documents
+    selectedTrashItems: FileObj[] = []; //trash items
+    loading = false;
 
     constructor() {
         makeAutoObservable(this);
     }
 
-    setCategories(categories: Category[]) {
+    setCategories(categories: File[]) {
         this.categories = categories;
     }
 
-    setCurrentCategory(category: string) {
-        this.currentCategory = category;
+    setCurrentCategoryPath(path: string) {
+        this.currentCategoryPath = path;
     }
 
-    setDocuments(documents: Document[]) {
-        this.documents = documents;
+    setLoading(loading: boolean) {
+        this.loading = loading;
     }
 
-    setTrashItems(trashItems: TrashItem[]) {
+    setTrashItems(trashItems: FileObj[]) {
         this.trashItems = trashItems;
     }
 
@@ -34,40 +50,21 @@ class FileManagerStore {
         this.selectedItemsIds = selectedItemsIds;
     }
 
+    setSelectedTrashItems(selectedItems: FileObj[]) {
+        this.selectedTrashItems = selectedItems;
+    }
+
     findCategoryByName(categoryName: string) {
-        if (!categoryName) return;
         return this.categories.find(category => category.name === categoryName) || null;
     }
 
-    getDocumentById(documentId?: string) {
-        if (!documentId) return;
-        return this.documents.find(doc => doc.id === documentId) || null;
-    }
-
-    // updateItemName(itemId: string, newName: string) {
-    //     const item = this.findItemById(itemId);
-    //     if (!item) return;
-    //
-    //     if (item.type === "dir") {
-    //         console.log(item.name)
-    //         item.name = newName;
-    //     } else {
-    //         console.log(item.name)
-    //         item.name = newName;
-    //     }
-    // }
-
     removeCategoryByName () {
-        const categories = fileManagerStore.categories;
-        const currentCategory = fileManagerStore.currentCategory;
-
-        const findCategory = fileManagerStore.findCategoryByName(currentCategory);
+        const findCategory = this.findCategoryByName(this.currentCategoryPath);
         if (!findCategory) return;
 
-        const newCategories = categories.filter(category => category.id !== findCategory.id);
-        fileManagerStore.setCategories(newCategories);
+        this.categories = this.categories.filter(category => category.id !== findCategory.id);
 
-        return currentCategory;
+        return this.currentCategoryPath;
     }
 
     findItemByName(itemName: string) {
@@ -98,8 +95,76 @@ class FileManagerStore {
         return null;
     }
 
-    getTrashItems() {
-        return this.trashItems;
+    deleteDocument(file: File) {
+        if (!file) return;
+
+        this.documents = this.documents.filter(doc => doc.id !== file.id);
+    }
+
+    deleteCategory(file: File) {
+        if (!file) return;
+
+        this.categories = this.categories.filter(cat => cat.id !== file.id);
+    }
+
+    moveFiles(currentPath: string, newPath: string, id: string) {
+        let filesByCurrentPath = this.getFilesByPath(currentPath);
+        const targetFile = filesByCurrentPath.find((file) => file.id === id);
+
+        if (!targetFile) return;
+
+        filesByCurrentPath = filesByCurrentPath.filter((file) => file.id !== id);
+        this.deleteFile(targetFile.path, targetFile.id);
+
+        const filesByNewPath = this.getFilesByPath(newPath);
+        filesByNewPath.push(targetFile);
+
+        targetFile.category = newPath;
+
+        const map = new Map(this.files);
+        map.set(currentPath, filesByCurrentPath);
+        map.set(newPath, filesByNewPath);
+        this.files = map;
+    }
+
+    deleteFile(path: string, id: string) {
+        const map = new Map(this.files);
+        map.set(path, this.getFilesByPath(path).filter((file) => file.id !== id));
+        this.files = map;
+    }
+
+    getFilesByPath(path: string) {
+        return this.files.get(path) || [];
+    }
+
+    getFileById(path: string, id: string) {
+        return this.getFilesByPath(path).find(file => file.id === id);
+    }
+
+    getAllDocuments(): FileObj[] {
+        return Array.from(this.files.values()).flat().filter((f) => f.type === "file");
+    }
+
+    replaceAllFiles(allFiles: ObservableMap<string, FileObj[]> | never[]) {
+        this.files = new Map(allFiles);
+    }
+
+    setFilesByPath(path: string, files: FileObj[]) {
+        const map = new Map(this.files);
+        map.set(path, files);
+        this.files = map;
+    }
+
+    updateDocumentsArray(documentId: string, newName: string, newPath: string) {
+        this.documents = this.documents.map(doc =>
+            doc.id === documentId ? { ...doc, name: newName, path: newPath} : doc
+        );
+    }
+
+    updateCategoriesArray(categoryId: string, newName: string, newPath: string) {
+        this.categories = this.categories.map(cat =>
+            cat.id === categoryId ? { ...cat, name: newName, path: newPath } : cat
+        );
     }
 }
 

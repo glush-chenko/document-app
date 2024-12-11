@@ -1,0 +1,138 @@
+@import "../styled/colors";
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  position: sticky;
+  top: 0;
+
+  background-color: $main-background-color;
+  border-radius: 0 0 1rem 1rem;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  z-index: 90;
+  padding: 0.5rem 0;
+  min-height: 4.8rem;
+  max-height: 4.8rem;
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-size: 0.95rem;
+
+    img {
+      max-width: 2.7rem;
+    }
+  }
+
+  .nav-left-section {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .nav-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+
+    height: 100%;
+
+    .container-btn {
+      height: 100%;
+      display: flex;
+      border-radius: 1rem;
+
+
+      &.active {
+        background-color: $secondary-color-bright;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 4px;
+      }
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+
+      background-color: transparent;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: color 200ms;
+      min-width: 7rem;
+      padding: 0.5rem;
+      color: $grey-700;
+
+      svg {
+        color: $secondary_color_button;
+        height: 1.6rem;
+        width: 100%;
+        transition: transform 200ms;
+      }
+
+      &:hover {
+        color: darken($grey-700, 70%);
+
+        svg {
+          color: darken($secondary_color_button, 5%);
+          transform: scale(1.1);
+        }
+      }
+    }
+  }
+
+  &.list {
+    //display: flex;
+
+    background-color: $secondary-color-dark;
+    padding: 1rem;
+
+    .file-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+
+      width: 100%;
+
+      .container-btn {
+        display: flex;
+        flex-wrap: wrap;
+
+        #btn-delete,
+        #btn-recover,
+        #btn-delete-forever {
+          color: $secondary-color-bright;
+          font-size: .9rem;
+          gap: .2rem;
+        }
+      }
+
+      .icon-button {
+        svg {
+          color: $grey-200;
+
+          &:hover {
+            color: $secondary-color-bright;
+          }
+        }
+      }
+
+      h4 {
+        margin: 0;
+        color: $secondary-color-bright;
+      }
+
+    }
+
+  }
+}

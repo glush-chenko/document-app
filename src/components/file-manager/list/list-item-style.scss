@@ -1,0 +1,49 @@
+@import "../../../mixins";
+
+.items-list {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+
+  .item {
+    @include file-manager-list-item;
+
+    .item-checkbox {
+      position: absolute;
+      right: 0.125rem;
+      top: 0.125rem;
+      padding: 0
+    }
+
+    .item-image {
+      width: 5rem;
+      max-width: 6rem;
+      max-height: 6rem;
+
+      &.trash {
+        height: 4.7rem;
+        width: 4.7rem;
+      }
+    }
+
+    .document-name {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      word-break: break-all;
+      max-width: 6rem;
+      overflow-wrap: break-word;
+      white-space: pre-line;
+      text-align: center;
+    }
+  }
+}

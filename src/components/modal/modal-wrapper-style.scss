@@ -1,0 +1,161 @@
+@import "../styled/colors";
+
+.modal-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: $modal-background-color;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1400;
+
+  visibility: visible;
+
+  .modal-content {
+    display: inline-block;
+    outline: none;
+    position: relative;
+    text-align: left;
+    transform: translateZ(0);
+    border-radius: 1rem;
+    min-width: 25rem;
+
+    background-color: $secondary-color-bright;
+
+    .dialog-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      position: relative;
+      padding: 1rem;
+      box-shadow: 0 10px 20px 0 rgba(0, 0, 0, .2);
+      border-radius: 1rem;
+
+      .dialog-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-end;
+
+        .categories-container {
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+
+          width: 100%;
+
+          .categories-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            padding: 0.2rem;
+            transition: background-color .2s;
+            border-radius: 0.5rem;
+            user-select: none;
+
+            > p {
+              display: -webkit-box;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 2;
+              overflow: hidden;
+              padding: 0.1rem;
+              width: 100%;
+              border-radius: 0.5rem;
+              max-width: 15rem;
+            }
+
+            &.current {
+              background-color: $grey-100;
+              color: $grey-300;
+
+              img {
+                opacity: 0.15;
+                transition: opacity 0.3s;
+              }
+
+              &::after {
+                pointer-events: none;
+              }
+            }
+
+
+            &:hover {
+              background-color: $grey-200;
+              border-radius: 0.5rem;
+            }
+
+            img {
+              max-height: 3rem;
+              max-width: 4rem;
+            }
+
+            p {
+              margin: 0;
+            }
+          }
+        }
+
+        .breadcrumbs {
+          width: 100%;
+        }
+
+        button {
+          background-color: $grey-600;
+          font-size: .8rem;
+        }
+
+        .rename-dialog-form,
+        .create-dialog-form {
+          display: flex;
+          width: 100%;
+
+          input {
+            height: 1.5rem;
+            width: 100%;
+            border-radius: 0.3rem;
+            border: 2px solid $grey-200;
+            padding: 0.2rem 0.5rem;
+            font-size: .9rem;
+
+            &:focus-visible {
+              outline: none;
+              border: 2px solid $secondary-color;
+            }
+          }
+        }
+      }
+
+      .dialog-info {
+        display: flex;
+        justify-content: space-between;
+
+        button {
+          svg {
+            color: $secondary-color;
+          }
+
+          &:hover {
+            svg {
+              color: $secondary-color-dark;
+            }
+          }
+        }
+
+        h2 {
+          margin: 0;
+          word-wrap: break-word;
+          word-break: break-word;
+          font-weight: 500;
+          text-align: center;
+          width: 100%;
+        }
+      }
+    }
+  }
+}

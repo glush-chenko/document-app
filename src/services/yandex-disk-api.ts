@@ -1,39 +1,31 @@
 import {Document} from "../types/document";
 import {Category} from "../types/category";
-import {Folder} from "../types/folder";
-import {fileManagerStore} from "../stores/file-manager-store";
+import {fileManagerStore, FileObj} from "../stores/file-manager-store";
 
-const BASE_URL = 'https://cloud-api.yandex.net/v1/disk/resources?path=CaseLabDocuments';
+const API_BASE_URL = 'https://cloud-api.yandex.net/v1/disk';
+const API_RESOURCES_URL = `${API_BASE_URL}/resources`;
+const BASE_PATH = 'CaseLabDocuments';
 const OAUTH_TOKEN = 'y0_AgAAAABv48hZAADLWwAAAAESE8nHAADpU4SPGP5Pua6oV6rsy_rYe0TFNw';
 
-export const fetchCategories = async (): Promise<Category[]> => {
-    try {
-        const response = await fetch(`${BASE_URL}`, {
-            headers: {
-                Authorization: `OAuth ${OAUTH_TOKEN}`,
-            },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Ошибка при получении категорий');
-        }
-
-        return data._embedded.items.map((item: any) => ({
-            name: item.name,
-            id: item.resource_id,
-            type: item.type
-        }));
-    } catch (error) {
-        console.error('Ошибка при получении категории:', error);
-        return [];
-    }
+const API_ENDPOINTS = {
+    CREATE_FOLDER: `${API_RESOURCES_URL}?path=`,
+    MOVE_DOCUMENT: `${API_RESOURCES_URL}/move`,
+    DELETE_DOCUMENT: `${API_RESOURCES_URL}?path=`,
+    RENAME_ITEM: `${API_RESOURCES_URL}/move?force_async=false`,
+    DOWNLOAD_FILE: `${API_RESOURCES_URL}/download?path=`,
+    GET_TRASH_CONTENTS: `${API_BASE_URL}/trash/resources`,
+    CLEAR_TRASH: `${API_BASE_URL}/trash/resources`,
+    RESTORE_FILE_FROM_TRASH: `${API_BASE_URL}/trash/resources/restore?path=`,
+    DELETE_FILE_FROM_TRASH: `${API_BASE_URL}/trash/resources?path=`
 };
 
-export const fetchDocuments = async (category: string): Promise<Document[]> => {
+const getFullPath = (endpoint: string, path: string) => {
+    return `${endpoint}${path}`;
+};
+
+export const fetchFiles = async (subPath?: string): Promise<FileObj[]> => {
     try {
-        const response = await fetch(`${BASE_URL}/${category}`, {
+        const response = await fetch(subPath ? `${getFullPath(API_ENDPOINTS.CREATE_FOLDER, BASE_PATH)}/${subPath}` : getFullPath(API_ENDPOINTS.CREATE_FOLDER, BASE_PATH), {
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
             },
@@ -41,34 +33,61 @@ export const fetchDocuments = async (category: string): Promise<Document[]> => {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'Ошибка при получении документов');
+            throw new Error(data.message || 'Ошибка при получении файлов');
+        }
+
+        if (!data._embedded || !Array.isArray(data._embedded.items)) {
+            console.warn('Нет доступных файлов в категории:', subPath);
+            return [];
         }
 
         return data._embedded.items
-            .filter((item: any) => item.type === 'file')
-            .map((item: any)=> {
-                const xxlSize = item.sizes.find((size: any) => size.name === 'XXL');
+            .filter((item: any) => (item.type === 'file' && !!subPath) || item.type === 'dir')
+            .map((item: any): FileObj => {
+                const xxlSize = item.sizes && item.sizes.find((size: any) => size.name === 'XXL');
 
                 return {
                     id: item.resource_id,
                     name: item.name,
-                    category,
                     preview: item.preview,
+                    category: subPath,
                     url: xxlSize ? xxlSize.url : item.file,
                     path: item.path,
                     created: item.created,
-                    type: item.type
+                    type: item.type,
+                    items: []
                 }
             });
     } catch (error) {
-        console.error('Ошибка при получении документов:', error);
+        console.error('Ошибка при получении файлов:', error);
         return [];
+    }
+}
+
+export const createFolder = async (folderPath: string = '/') => {
+    try {
+        const response = await fetch(getFullPath(API_ENDPOINTS.CREATE_FOLDER, folderPath), {
+            method: 'PUT',
+            headers: {
+                Authorization: `OAuth ${OAUTH_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Ошибка при создании папки');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Ошибка при создании папки:', error);
+        return false;
     }
 };
 
-export const moveDocument = async (sourcePath: string, targetPath: string): Promise<void> => {
+export const moveDocument = async (sourcePath: string, targetPath: string) => {
     try {
-        const response = await fetch(`${BASE_URL}/move?from=${encodeURIComponent(sourcePath)}&path=${encodeURIComponent(targetPath)}/new_file`, {
+        const response = await fetch(getFullPath(API_ENDPOINTS.MOVE_DOCUMENT, `?from=${sourcePath}&path=${targetPath}`), {
             method: 'POST',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
@@ -78,14 +97,19 @@ export const moveDocument = async (sourcePath: string, targetPath: string): Prom
         if (!response.ok) {
             throw new Error('Ошибка при перемещении документа');
         }
+
+        return true;
     } catch (error) {
         console.error('Ошибка при перемещении документа:', error);
+        return false;
     }
 };
 
-export const deleteDocument = async (path: string): Promise<void> => {
+//TODO deleteFile переименовать
+//https://cloud-api.yandex.net/v1/disk/resources?path=CaseLabDocuments
+export const deleteDocument = async (path: string) => {
     try {
-        const response = await fetch(`${BASE_URL}/${encodeURIComponent(path)}`, {
+        const response = await fetch(getFullPath(`${API_ENDPOINTS.DELETE_DOCUMENT}`, path), {
             method: 'DELETE',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
@@ -95,32 +119,60 @@ export const deleteDocument = async (path: string): Promise<void> => {
         if (!response.ok) {
             throw new Error('Ошибка при удалении документа');
         }
+
+        return true;
     } catch (error) {
         console.error('Ошибка при удалении документа:', error);
+        return false;
     }
 };
 
-export const renameItem = async (oldPath: string, newPath: string) => {
-    const url = `https://cloud-api.yandex.net/v1/disk/resources/move?from=${encodeURIComponent(oldPath)}&path=${encodeURIComponent(newPath)}`;
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Authorization: `OAuth ${OAUTH_TOKEN}`,
-        },
-    });
-
-    if (response.ok) {
-        console.log('Файл или папка успешно переименованы!');
-    } else {
-        const error = await response.json();
-        console.error('Ошибка:', error);
-    }
-};
-
-export const getTrashContents = async (): Promise<void> => {
+export const renameItem = async (currentPath: string, newPath: string) => {
     try {
-        const response = await fetch(`https://cloud-api.yandex.net/v1/disk/trash/resources`, {
+        const response = await fetch(getFullPath(API_ENDPOINTS.RENAME_ITEM, `?from=${currentPath}&path=${newPath}`), {
+            method: 'POST',
+            headers: {
+                Authorization: `OAuth ${OAUTH_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Ошибка при переименовании документа');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Ошибка при переименовании документа:', error);
+        return false;
+    }
+};
+
+export const downloadFile = async (filePath: string): Promise<string | null> => {
+    try {
+        const response = await fetch(getFullPath(API_ENDPOINTS.DOWNLOAD_FILE, filePath), {
+            method: 'GET',
+            headers: {
+                Authorization: `OAuth ${OAUTH_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Ошибка при получении ссылки для скачивания:', error);
+            return null;
+        }
+
+        const data = await response.json();
+        return data.href;
+    } catch (error) {
+        console.error('Ошибка при выполнении запроса:', error);
+        return null;
+    }
+};
+
+export const getTrashContents = async (): Promise<FileObj[]> => {
+    try {
+        const response = await fetch(API_ENDPOINTS.GET_TRASH_CONTENTS, {
             method: 'GET',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
@@ -133,37 +185,26 @@ export const getTrashContents = async (): Promise<void> => {
 
         const data = await response.json();
 
-        const trashItems = data._embedded.items.map((item: any) => {
-            if (item.type === 'file') {
-                return {
-                    id: item.resource_id,
-                    name: item.name,
-                    preview: item.preview,
-                    path: item.path,
-                    created: item.created
-                } as Document;
-            } else if (item.type === 'dir') {
-                return {
-                    public_key: item.public_key,
-                    name: item.name,
-                    type: 'dir',
-                    created: item.created,
-                    modified: item.modified,
-                    path: item.path,
-                } as Folder;
-            }
-            return null;
-        }).filter((item: any) => item !== null);
-
-        fileManagerStore.setTrashItems(trashItems);
+        return data._embedded.items
+            .filter((item: any) => item.type === 'file' || item.type === 'dir')
+            .map((item: any): FileObj => ({
+                id: item.resource_id,
+                name: item.name,
+                preview: item.preview,
+                path: item.path,
+                created: item.created,
+                type: item.type,
+                items: []
+            }));
     } catch (error) {
         console.error('Ошибка при получении содержимого корзины:', error);
+        return [];
     }
 };
 
-export const clearTrash = async (): Promise<void> => {
+export const clearTrash = async () => {
     try {
-        const response = await fetch(`https://cloud-api.yandex.net/v1/disk/trash/resources`, {
+        const response = await fetch(API_ENDPOINTS.CLEAR_TRASH, {
             method: 'DELETE',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
@@ -180,15 +221,14 @@ export const clearTrash = async (): Promise<void> => {
     }
 };
 
-export const restoreFileFromTrash = async (path: string): Promise<void> => {
+export const restoreFileFromTrash = async (filePath: string) => {
     try {
-        const response = await fetch(`https://cloud-api.yandex.net/v1/disk/trash/resources/restore`, {
+        const response = await fetch(getFullPath(API_ENDPOINTS.RESTORE_FILE_FROM_TRASH, filePath), {
             method: 'PUT',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ path: path }),
+            }
         });
 
         if (!response.ok) {
@@ -201,9 +241,9 @@ export const restoreFileFromTrash = async (path: string): Promise<void> => {
     }
 };
 
-export const deleteFileFromTrash = async (path: string): Promise<void> => {
+export const deleteFileFromTrash = async (filePath: string) => {
     try {
-        const response = await fetch(`https://cloud-api.yandex.net/v1/disk/trash/resources?path=${encodeURIComponent(path)}`, {
+        const response = await fetch(getFullPath(API_ENDPOINTS.DELETE_FILE_FROM_TRASH, filePath), {
             method: 'DELETE',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,

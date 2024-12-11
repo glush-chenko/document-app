@@ -3,6 +3,7 @@ import {makeAutoObservable} from 'mobx';
 export enum VIEW_TYPES {
     ALL_DOCUMENTS = "ALL_DOCUMENTS",
     ALL_CATEGORIES = "ALL_CATEGORIES",
+    TRASH = "TRASH"
 }
 
 class NavigationStore {

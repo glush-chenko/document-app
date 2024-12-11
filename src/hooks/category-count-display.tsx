@@ -1,17 +1,16 @@
 import React from 'react';
 
 interface SelectedItemsCountDisplayProps {
-    selectedItemsIds: string[];
+    count: number;
 }
 
 export const SelectedItemsCountDisplay = (props: SelectedItemsCountDisplayProps) => {
-    const {selectedItemsIds} = props;
-    const categoryCount = selectedItemsIds.length;
+    const {count} = props;
 
     let categoryLabel: string;
-    if (categoryCount === 1) {
+    if (count === 1) {
         categoryLabel = "файл";
-    } else if (categoryCount >= 2 && categoryCount <= 4) {
+    } else if (count >= 2 && count <= 4) {
         categoryLabel = "файла";
     } else {
         categoryLabel = "файлов";
@@ -19,7 +18,7 @@ export const SelectedItemsCountDisplay = (props: SelectedItemsCountDisplayProps)
 
     return (
         <h4>
-            {categoryCount} {categoryLabel}
+            {count} {categoryLabel}
         </h4>
     );
 };

@@ -1,0 +1,38 @@
+@import "../../../styled/colors";
+
+.document-detail {
+  max-width: 100%;
+  background-color: $secondary-color-dark;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+
+  > p {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    color: $secondary-color-bright;
+    transform: translate(-50%, -50%);
+  }
+
+  .full-document-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+    left: 0;
+    bottom: 0;
+
+    display: block;
+    margin: auto;
+    object-fit: contain;
+
+    user-select: none;
+    max-height: 100%;
+    max-width: 100%;
+  }
+}

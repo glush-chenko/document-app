@@ -1,0 +1,20 @@
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  background-color: #0000004f;
+  height: 100%;
+  width: 100%;
+  z-index: 200;
+  user-select: none;
+
+  .loading {
+    max-height: 6rem;
+    max-width: 8rem;
+  }
+}
