@@ -1,18 +1,16 @@
-import {useNavigate, useParams, useSearchParams} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {fileManagerStore} from "../stores/file-manager-store";
-import {navigationStore, VIEW_TYPES} from "../stores/navigation-store";
 import {useMemo, useState} from "react";
 import DriveFileMoveIcon from "@mui/icons-material/DriveFileMove";
-import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from '@mui/icons-material/Delete';
-import {deleteDocument, downloadFile} from "../services/yandex-disk-api";
 import {useSnackbarWithAction} from "./use-snackbar-with-action";
+import {deleteDocument} from "../services/yandex-disk-api";
 
 export const useCategoryMenuItemsInfo = () => {
-    const {categoryName} = useParams();
     const navigate = useNavigate();
     const {enqueueSnackbar, closeSnackbar} = useSnackbarWithAction();
+    const currentCategoryPath = fileManagerStore.currentCategoryPath;
 
     const [showMoveDocumentModal, setShowMoveDocumentModal] = useState(false);
     const [showRenameDocumentModal, setShowRenameDocumentModal] = useState(false);
@@ -21,16 +19,10 @@ export const useCategoryMenuItemsInfo = () => {
         const confirmed = window.confirm('Вы уверены, что хотите удалить?');
 
         if (confirmed) {
-            const findCategory = fileManagerStore.findCategoryByName(fileManagerStore.currentCategoryPath);
-            const currentCategory = fileManagerStore.removeCategoryByName()
-            if (!currentCategory) return;
+            const result = await deleteDocument(`CaseLabDocuments/${currentCategoryPath}`);
 
-            await deleteDocument(currentCategory);
-
-            if (findCategory) {
-                fileManagerStore.deleteCategory(findCategory);
-
-                navigate("../");
+            if (result) {
+                navigate("..");
                 enqueueSnackbar(
                     `Объект успешно удалён`,
                     () => {
@@ -52,10 +44,6 @@ export const useCategoryMenuItemsInfo = () => {
                 divider: false,
                 onClick: () => {
                     setShowMoveDocumentModal(true);
-                    // if (categoryName) {
-                    //     const item = fileManagerStore.findCategoryByName(categoryName);
-                    //     navigate(`/CaseLabDocuments/categories/${categoryName}/move?ids=${item?.id}`);
-                    // }
                 }
             },
             {
@@ -64,7 +52,6 @@ export const useCategoryMenuItemsInfo = () => {
                 divider: false,
                 onClick: async () => {
                     setShowRenameDocumentModal(true);
-                    // navigate(`/CaseLabDocuments/categories/${categoryName}/rename`);
                 }
             },
             {
@@ -76,7 +63,7 @@ export const useCategoryMenuItemsInfo = () => {
         ];
 
         return items;
-    }, [navigate, categoryName]);
+    }, [navigate, currentCategoryPath]);
 
     return {
         menuItems,

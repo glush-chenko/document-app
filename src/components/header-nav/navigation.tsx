@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {Link, useParams} from "react-router-dom";
 import logo from "../../assets/logo.png"
 import "./navigation-style.scss"
@@ -10,14 +10,12 @@ import {IconButton} from "@mui/material";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuItem from '@mui/material/MenuItem';
-import {File, fileManagerStore} from "../../stores/file-manager-store";
+import {fileManagerStore} from "../../stores/file-manager-store";
 import {StyledMenu} from "../styled/styled-menu";
 import Divider from "@mui/material/Divider";
 import {
     deleteDocument,
     deleteFileFromTrash,
-    downloadFile,
-    getTrashContents, renameItem,
     restoreFileFromTrash
 } from "../../services/yandex-disk-api";
 import {useMenuItemsInfo} from "../../hooks/use-menu-items-info";
@@ -26,10 +24,8 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import {AsynchronousAutocomplete} from "../styled/asynchronous-autocomplete";
 import {useSnackbarWithAction} from "../../hooks/use-snackbar-with-action";
-import {Loading} from "../generic/loading";
 import {MoveDocumentModal} from "../file-manager/document/move/move-document-modal";
 import {RenameDocuments} from "../file-manager/document/rename/rename-documents";
-import {useReplaceAfterLastSlash} from "../../hooks/use-replace-after-last-slash";
 
 export const Navigation = observer(() => {
     const {
@@ -45,14 +41,10 @@ export const Navigation = observer(() => {
 
     const selectedItemsIds = fileManagerStore.selectedItemsIds;
     const {'*': path} = useParams();
-    const selectedTrashItems = fileManagerStore.selectedTrashItems;
     const currentView = navigationStore.currentView;
     const trashItems = fileManagerStore.trashItems;
-    const currentCategoryPath = fileManagerStore.currentCategoryPath;
 
     const open = Boolean(anchorEl);
-
-    const replaceAfterLastSlash = useReplaceAfterLastSlash();
 
     const handleDeleteItem = useCallback(async () => {
         const confirmed = window.confirm('Вы уверены, что хотите удалить?');
@@ -100,15 +92,16 @@ export const Navigation = observer(() => {
     }, []);
 
     const handleFileOperation = useCallback(async (operation: (path: string) => Promise<void>, restore?: boolean) => {
-        for (const item of selectedTrashItems) {
+        for (const trashId of selectedItemsIds) {
 
-            if (item) {
+            if (trashId) {
                 fileManagerStore.setLoading(true);
+                const file = fileManagerStore.findTrashItemById(trashId);
 
-                await operation(item.path);
+                await operation(file?.path || "");
 
                 enqueueSnackbar(
-                    `Объект ${item.name} успешно ${restore ? "восстановлен" : "удалён"}`,
+                    `Объект успешно ${restore ? "восстановлен" : "удалён"}`,
                     () => {
                         closeSnackbar();
                     },
@@ -122,39 +115,30 @@ export const Navigation = observer(() => {
         }
 
         fileManagerStore.setLoading(false);
-    }, [selectedTrashItems, trashItems]);
+    }, [selectedItemsIds, fileManagerStore.trashItems]);
 
     const handleRestore = useCallback(async () => {
         await handleFileOperation(restoreFileFromTrash, true);
 
         const newTrashItems = trashItems.filter(trashItem =>
-            !selectedTrashItems.some(item => item.id === trashItem.id)
+            !selectedItemsIds.some(item => item === trashItem.id)
         );
 
         fileManagerStore.setTrashItems(newTrashItems);
 
-        // setTimeout(async () => {
-        //     const newCategories = await fetchCategories();
-        //     fileManagerStore.setCategories(newCategories);
-        // }, 1000);
-
-        fileManagerStore.setSelectedTrashItems([]);
-    }, [handleFileOperation, selectedTrashItems, trashItems]);
+        fileManagerStore.setSelectedItemsIds([]);
+    }, [handleFileOperation, selectedItemsIds]);
 
     const handleDeleteForever = useCallback(async () => {
         await handleFileOperation(deleteFileFromTrash);
 
         const newTrashItems = trashItems.filter(trashItem =>
-            !selectedTrashItems.some(item => item.id === trashItem.id)
+            !selectedItemsIds.some(item => item === trashItem.id)
         );
 
         fileManagerStore.setTrashItems(newTrashItems);
-        fileManagerStore.setSelectedTrashItems([]);
-    }, [handleFileOperation, trashItems, selectedTrashItems]);
-
-    const firstFile = useMemo(() => {
-        return fileManagerStore.findItemById(selectedItemsIds[0]);
-    }, [selectedItemsIds]);
+        fileManagerStore.setSelectedItemsIds([]);
+    }, [handleFileOperation, selectedItemsIds]);
 
     const handleRenameModalClose = useCallback(() => {
         setShowRenameDocumentModal(false);
@@ -164,19 +148,9 @@ export const Navigation = observer(() => {
         setShowMoveDocumentModal(false);
     }, []);
 
-    const handleRename = useCallback(async (item: File, newName: string) => {
-        const newItemPath = item.type === "file" ? `${currentCategoryPath}/` : `${replaceAfterLastSlash(currentCategoryPath, newName)}/`;
-        const fullPath = `CaseLabDocuments/${currentCategoryPath ? newItemPath : ""}${newName}`;
-
-        fileManagerStore.updateDocumentsArray(item.id, newName, fullPath);
-        fileManagerStore.updateCategoriesArray(item.id, newName, fullPath);
-
-        return await renameItem(`${item.path}`, fullPath);
-    }, [currentCategoryPath]);
-
     return (
-        <nav className={(!selectedItemsIds.length && !selectedTrashItems.length) ? "navigation" : "navigation list"}>
-            {!selectedItemsIds.length && !selectedTrashItems.length ? (
+        <nav className={(!selectedItemsIds.length) ? "navigation" : "navigation list"}>
+            {!selectedItemsIds.length ? (
                 <>
                     <div className="nav-left-section">
                         <div className="logo">
@@ -192,7 +166,7 @@ export const Navigation = observer(() => {
             ) : (
                 <div className="file-info">
                     <SelectedItemsCountDisplay
-                         count={selectedItemsIds.length ? selectedItemsIds.length : selectedTrashItems.length}/>
+                        count={selectedItemsIds.length}/>
                     <div className="container-btn">
                         {currentView !== VIEW_TYPES.TRASH ? (
                             <IconButton
@@ -262,8 +236,10 @@ export const Navigation = observer(() => {
                 <MoveDocumentModal onClose={handleMoveModalClose}/>
             )}
 
-            {(showRenameDocumentModal && firstFile) && (
-                <RenameDocuments id={firstFile.id} name={firstFile.name} onClose={handleRenameModalClose} onRename={handleRename}/>
+            {showRenameDocumentModal && (
+                <RenameDocuments
+                    onClose={handleRenameModalClose}
+                />
             )}
         </nav>
     );

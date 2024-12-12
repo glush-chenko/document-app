@@ -1,12 +1,11 @@
-import {useNavigate, useParams, useSearchParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import {fileManagerStore} from "../stores/file-manager-store";
 import {navigationStore, VIEW_TYPES} from "../stores/navigation-store";
 import {useMemo, useState} from "react";
 import DriveFileMoveIcon from "@mui/icons-material/DriveFileMove";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from '@mui/icons-material/Delete';
-import {deleteDocument, downloadFile} from "../services/yandex-disk-api";
+import {downloadFile} from "../services/yandex-disk-api";
 
 export const useMenuItemsInfo = () => {
     const {categoryName, documentId} = useParams();
@@ -25,7 +24,7 @@ export const useMenuItemsInfo = () => {
     const downloadSelectedFiles = async () => {
         try {
             const downloadLinks = await Promise.all(selectedItemsIds.map(async (id) => {
-                const item = fileManagerStore.findItemById(id);
+                const item = fileManagerStore.findFileById(id);
 
                 if (item) {
                     let link;
@@ -61,21 +60,6 @@ export const useMenuItemsInfo = () => {
                 divider: false,
                 onClick: () => {
                     setShowMoveDocumentModal(true);
-                    // const selectedIds = selectedItemsIds.join(',');
-                    //
-                    // if (isCategoryViewType) {
-                    //     if (categoryName) {
-                    //         if (selectedIds) {
-                    //             navigate(`CaseLabDocuments/categories/${categoryName}/move?ids=${selectedIds}`);
-                    //         } else {
-                    //             navigate(`CaseLabDocuments/categories/${categoryName}/move`);
-                    //         }
-                    //     } else {
-                    //         navigate(`CaseLabDocuments/categories/move?ids=${selectedIds}`);
-                    //     }
-                    // } else {
-                    //     navigate(`CaseLabDocuments/documents/move?ids=${selectedIds}`);
-                    // }
                 }
             }
         ];
@@ -87,24 +71,6 @@ export const useMenuItemsInfo = () => {
                 divider: false,
                 onClick: async () => {
                     setShowRenameDocumentModal(true);
-
-                    // const item = fileManagerStore.findItemById(selectedItemsIds[0]);
-                    //
-                    // if (item) {
-                    //     if (item.type === "dir") {
-                    //         navigate(`/CaseLabDocuments/categories/rename?name=${item.name}`);
-                    //     } else {
-                    //         const documentDetailPath = documentId ? `${item.id}/` : "";
-                    //
-                    //         if (isCategoryViewType) {
-                    //             navigate(`/CaseLabDocuments/categories/${item.category}/${documentDetailPath}rename?name=${item.name}`);
-                    //         } else {
-                    //             navigate(`/CaseLabDocuments/documents/${documentDetailPath}rename?name=${item.name}`);
-                    //         }
-                    //     }
-                    // } else {
-                    //     console.error("No selected items", item);
-                    // }
                 }
             });
         }

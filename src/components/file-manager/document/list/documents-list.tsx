@@ -5,19 +5,18 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from "@mui/material/IconButton";
 import Divider from "@mui/material/Divider";
 import {observer} from "mobx-react-lite";
-import {File, fileManagerStore} from "../../../../stores/file-manager-store";
+import {fileManagerStore} from "../../../../stores/file-manager-store";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MenuItem from '@mui/material/MenuItem';
 import {navigationStore, VIEW_TYPES} from "../../../../stores/navigation-store";
 import {StyledMenu} from "../../../styled/styled-menu";
 import {List} from "../../list/list";
 import {useFetchAllDocuments} from "../../../../hooks/use-fetch-all-documents";
-import {clearTrash, fetchFiles, getTrashContents, renameItem} from "../../../../services/yandex-disk-api";
+import {clearTrash, fetchFiles, getTrashContents} from "../../../../services/yandex-disk-api";
 import {useCategoryMenuItemsInfo} from "../../../../hooks/use-category-menu-items-info";
 import {DocumentDetail} from "../detail/document-detail";
 import {MoveDocumentModal} from "../move/move-document-modal";
 import {RenameDocuments} from "../rename/rename-documents";
-import {useReplaceAfterLastSlash} from "../../../../hooks/use-replace-after-last-slash";
 import Button from "@mui/material/Button";
 import WhatshotIcon from "@mui/icons-material/Whatshot";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
@@ -36,10 +35,6 @@ export const DocumentsList = observer(() => {
     const navigate = useNavigate();
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
-    const currentCategoryPath = fileManagerStore.currentCategoryPath;
-
-    const replaceAfterLastSlash = useReplaceAfterLastSlash();
 
     const docId = useMemo(() => {
         return searchParams.get("id");
@@ -119,22 +114,9 @@ export const DocumentsList = observer(() => {
         setShowRenameDocumentModal(false);
     }, []);
 
-    const category = useMemo(() => {
-        return fileManagerStore.findItemByName(currentCategoryName);
-    }, [currentCategoryName]);
-
-    const handleRename = useCallback(async (item: File, newName: string) => {
-        const newItemPath = item.type === "file" ? `${currentCategoryPath}/` : `${replaceAfterLastSlash(currentCategoryPath, newName)}/`;
-        const fullPath = `CaseLabDocuments/${currentCategoryPath ? newItemPath : ""}${newName}`;
-
-        fileManagerStore.updateDocumentsArray(item.id, newName, fullPath);
-        fileManagerStore.updateCategoriesArray(item.id, newName, fullPath);
-
-        return await renameItem(`${item.path}`, fullPath);
-    }, [currentCategoryPath]);
-
     const handleClearTrash = useCallback(() => {
         void clearTrash();
+        fileManagerStore.setTrashItems([]);
     }, []);
 
     const listTitle = useMemo(() => {
@@ -237,12 +219,9 @@ export const DocumentsList = observer(() => {
                 <MoveDocumentModal onClose={handleMoveDocumentModalClose}/>
             )}
 
-            {(showRenameDocumentModal && category) && (
+            {showRenameDocumentModal && (
                 <RenameDocuments
                     onClose={handleRenameDocumentModalClose}
-                    id={category.id}
-                    name={category.name}
-                    onRename={handleRename}
                 />
             )}
 

@@ -11,15 +11,14 @@ import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
-import {deleteDocument, downloadFile, renameItem} from "../../../../../services/yandex-disk-api";
-import {Document} from "../../../../../types/document";
+import {useNavigate, useParams, useSearchParams} from "react-router-dom";
+import {deleteDocument, downloadFile} from "../../../../../services/yandex-disk-api";
 import "./slider-toolbar.scss"
 import {PopupBody} from "../../../../styled/popup-body";
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import {useDocumentMenuItemsInfo} from "../../../../../hooks/use-document-menu-items-info";
-import {navigationStore, VIEW_TYPES} from "../../../../../stores/navigation-store";
-import {File, fileManagerStore} from "../../../../../stores/file-manager-store";
+import {navigationStore} from "../../../../../stores/navigation-store";
+import {fileManagerStore, FileObj} from "../../../../../stores/file-manager-store";
 import {useSnackbarWithAction} from "../../../../../hooks/use-snackbar-with-action";
 import {MoveDocumentModal} from "../../move/move-document-modal";
 import {RenameDocuments} from "../../rename/rename-documents";
@@ -28,7 +27,7 @@ import {useTrimmedPath} from "../../../../../hooks/use-trimmed-path";
 interface SliderToolbarProps {
     currentDocIndex: number;
     setCurrentDocIndex: React.Dispatch<React.SetStateAction<number>>
-    documents: Document[];
+    files: FileObj[];
     buttonsVisible: boolean;
     infoPopupAnchor: HTMLElement | null;
     setInfoPopupAnchor: React.Dispatch<React.SetStateAction<HTMLElement | null>>
@@ -38,7 +37,7 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
     const {
         currentDocIndex,
         setCurrentDocIndex,
-        documents,
+        files,
         buttonsVisible,
         infoPopupAnchor,
         setInfoPopupAnchor
@@ -55,24 +54,24 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
     const {enqueueSnackbar, closeSnackbar} = useSnackbarWithAction();
 
     const [_searchParams, setSearchParams] = useSearchParams();
+    const {'*': path} = useParams();
     const getTrimmedPath = useTrimmedPath();
 
     const currentViewType = navigationStore.currentView;
-    const currentCategoryPath = fileManagerStore.currentCategoryPath;
 
     const selectedDocument = useMemo(() => {
-        return documents[currentDocIndex] as Document;
-    }, [currentDocIndex, documents]);
+        return files[currentDocIndex];
+    }, [currentDocIndex, files]);
 
     const isFirstDocument = useMemo(() => {
-        return currentDocIndex === 0 && documents[currentDocIndex];
-    }, [currentDocIndex, documents]);
+        return currentDocIndex === 0 && files[currentDocIndex];
+    }, [currentDocIndex, files]);
 
     const isLastDocument = useMemo(() => {
         if (currentDocIndex >= 0) {
-            return currentDocIndex === documents.length - 1;
+            return currentDocIndex === files.length - 1;
         }
-    }, [currentDocIndex, documents]);
+    }, [currentDocIndex, files]);
 
     const [actionsMenuAnchor, setActionsMenuAnchor] = React.useState<null | HTMLElement>(null);
 
@@ -89,7 +88,7 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
     }, []);
 
     const handleDownload = useCallback(async () => {
-        const item = fileManagerStore.findItemById(selectedDocument.id);
+        const item = fileManagerStore.findFileById(selectedDocument.id);
 
         if (item) {
             let link;
@@ -111,10 +110,10 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
             fileManagerStore.setLoading(true);
 
             handleClose();
-            const result = await deleteDocument(`${selectedDocument.category}/${selectedDocument.name}`);
-            fileManagerStore.deleteDocument(selectedDocument);
+            const result = await deleteDocument(selectedDocument.path);
 
             if (result) {
+                fileManagerStore.deleteFile(path || "/", selectedDocument.id);
                 enqueueSnackbar(
                     `Объект ${selectedDocument.name} успешно удалён`,
                     () => {
@@ -141,28 +140,28 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
     }, [selectedDocument, handleClose]);
 
     const handleNext = useCallback(() => {
-        if (currentDocIndex < documents.length - 1) {
+        if (currentDocIndex < files.length - 1) {
             const nextIndex = currentDocIndex + 1;
-            const item = documents[nextIndex];
+            const item = files[nextIndex];
 
             setCurrentDocIndex(nextIndex);
             setSearchParams({
                 id: item.id
             });
         }
-    }, [currentDocIndex, documents, navigate, currentViewType]);
+    }, [currentDocIndex, files, navigate, currentViewType]);
 
     const handlePrev = useCallback(() => {
         if (currentDocIndex > 0) {
             const prevIndex = currentDocIndex - 1;
-            const item = documents[prevIndex];
+            const item = files[prevIndex];
 
             setCurrentDocIndex(prevIndex);
             setSearchParams({
                 id: item.id
             });
         }
-    }, [currentDocIndex, documents, navigate, currentViewType]);
+    }, [currentDocIndex, files, navigate, currentViewType]);
 
     const handleMoveDocumentModalClose = useCallback(() => {
         setShowMoveDocumentModal(false);
@@ -170,15 +169,6 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
 
     const handleRenameDocumentModalClose = useCallback(() => {
         setShowRenameDocumentModal(false);
-    }, []);
-
-    const handleRename = useCallback(async (item: File, newName: string) => {
-        const newPath = `CaseLabDocuments/${currentCategoryPath ? `${currentCategoryPath}/` : ""}${newName}`;
-        const res = await renameItem(`${item.path}`, newPath);
-
-        fileManagerStore.updateDocumentsArray(item.id, newName, newPath);
-        fileManagerStore.updateCategoriesArray(item.id, newName, newPath);
-        return res;
     }, []);
 
     return (
@@ -272,9 +262,6 @@ export const SliderToolbar = forwardRef<HTMLDivElement, SliderToolbarProps>((pro
             {showRenameDocumentModal && (
                 <RenameDocuments
                     onClose={handleRenameDocumentModalClose}
-                    id={selectedDocument.id}
-                    name={selectedDocument.name}
-                    onRename={handleRename}
                 />
             )}
         </div>

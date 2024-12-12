@@ -1,6 +1,4 @@
-import {Document} from "../types/document";
-import {Category} from "../types/category";
-import {fileManagerStore, FileObj} from "../stores/file-manager-store";
+import {FileObj} from "../stores/file-manager-store";
 
 const API_BASE_URL = 'https://cloud-api.yandex.net/v1/disk';
 const API_RESOURCES_URL = `${API_BASE_URL}/resources`;
@@ -11,7 +9,6 @@ const API_ENDPOINTS = {
     CREATE_FOLDER: `${API_RESOURCES_URL}?path=`,
     MOVE_DOCUMENT: `${API_RESOURCES_URL}/move`,
     DELETE_DOCUMENT: `${API_RESOURCES_URL}?path=`,
-    RENAME_ITEM: `${API_RESOURCES_URL}/move?force_async=false`,
     DOWNLOAD_FILE: `${API_RESOURCES_URL}/download?path=`,
     GET_TRASH_CONTENTS: `${API_BASE_URL}/trash/resources`,
     CLEAR_TRASH: `${API_BASE_URL}/trash/resources`,
@@ -105,8 +102,6 @@ export const moveDocument = async (sourcePath: string, targetPath: string) => {
     }
 };
 
-//TODO deleteFile переименовать
-//https://cloud-api.yandex.net/v1/disk/resources?path=CaseLabDocuments
 export const deleteDocument = async (path: string) => {
     try {
         const response = await fetch(getFullPath(`${API_ENDPOINTS.DELETE_DOCUMENT}`, path), {
@@ -129,7 +124,7 @@ export const deleteDocument = async (path: string) => {
 
 export const renameItem = async (currentPath: string, newPath: string) => {
     try {
-        const response = await fetch(getFullPath(API_ENDPOINTS.RENAME_ITEM, `?from=${currentPath}&path=${newPath}`), {
+        const response = await fetch(getFullPath(API_ENDPOINTS.MOVE_DOCUMENT, `?from=${currentPath}&path=${newPath}&force_async=false`), {
             method: 'POST',
             headers: {
                 Authorization: `OAuth ${OAUTH_TOKEN}`,

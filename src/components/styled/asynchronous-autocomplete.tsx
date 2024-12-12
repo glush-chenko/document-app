@@ -4,16 +4,14 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import {useCallback} from "react";
 import {useFetchAllDocuments} from "../../hooks/use-fetch-all-documents";
-import {fileManagerStore, FileObj} from "../../stores/file-manager-store";
-import {File} from "../../stores/file-manager-store";
+import {FileObj} from "../../stores/file-manager-store";
 import {observer} from "mobx-react-lite";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import FolderIcon from '@mui/icons-material/Folder';
 import DescriptionIcon from '@mui/icons-material/Description';
 import {useTrimmedPath} from "../../hooks/use-trimmed-path";
-import {Document} from "../../types/document";
 import {ObservableMap} from "mobx";
 
 export const AsynchronousAutocomplete = observer(() => {
@@ -55,16 +53,16 @@ export const AsynchronousAutocomplete = observer(() => {
 
     const handleOptionClick = useCallback((option: FileObj) => {
         if (option.type === "file") {
-            navigate(`/CaseLabDocuments/categories/${option.category}/${option.id}`);
+            navigate(`?id=${option.id}`);
         } else {
-            const trimmedResult = getTrimmedResult("/CaseLabDocuments/categories");
+            const trimmedResult = getTrimmedResult("disk:/CaseLabDocuments/", option.path);
 
-            if (trimmedResult && trimmedResult !== `${option.name}/`) {
-                navigate(`/CaseLabDocuments/categories/${trimmedResult}/${option.name}`);
+            if (trimmedResult) {
+                navigate(`/CaseLabDocuments/categories/${trimmedResult}`);
             }
         }
         handleClose();
-    }, [navigate]);
+    }, [navigate, getTrimmedResult]);
 
     return (
         <Autocomplete
@@ -81,6 +79,7 @@ export const AsynchronousAutocomplete = observer(() => {
             renderInput={(params) => (
                 <TextField
                     {...params}
+                    size="small"
                     label="Поиск по документам"
                     slotProps={{
                         input: {

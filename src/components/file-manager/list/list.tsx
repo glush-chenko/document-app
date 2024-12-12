@@ -8,20 +8,15 @@ import {observer} from "mobx-react-lite";
 import {ListItem} from "./list-item/list-item";
 import {navigationStore, VIEW_TYPES} from "../../../stores/navigation-store";
 import {Loading} from "../../generic/loading";
-import {File} from "../../../stores/file-manager-store";
-import {Category} from "../../../types/category";
 
 interface ListProps {
     showTrash?: boolean;
     items: FileObj[];
 }
 
-const BASE_PATH = `CaseLabDocuments/categories`;
-
 export const List = observer((props: ListProps) => {
     const {showTrash, items} = props;
     const navigate = useNavigate();
-    // const getTrimmedPath = useTrimmedPath();
     const {'*': path} = useParams();
     const categories = path ? path.split('/') : [];
 
@@ -35,40 +30,18 @@ export const List = observer((props: ListProps) => {
     const handleItemDoubleClick = useCallback((item: FileObj) => {
         if (currentView === VIEW_TYPES.ALL_CATEGORIES) {
             if (item.type === 'file') {
-                // const documentItem = item;
-
-                categories.push(`?id=${item.id}`);
+                navigate(`?id=${item.id}`);
             } else if (item.type === 'dir') {
-                const categoryItem = item as Category;
-                categories.push(categoryItem.name);
+                categories.push(item.name);
+
+                const fullPath = `/CaseLabDocuments/categories/${categories.join('/')}`;
+                navigate(fullPath);
             }
-
-            const fullPath = `/CaseLabDocuments/categories/${categories.join('/')}`;
-
-            navigate(fullPath);
         } else {
-            navigate(`/CaseLabDocuments/documents?id=${item.id}`);
+            navigate(`?id=${item.id}`);
         }
 
         fileManagerStore.setSelectedItemsIds([]);
-
-        // if (currentView === VIEW_TYPES.ALL_CATEGORIES) {
-        //     const res = getTrimmedPath(BASE_PATH);
-        //
-        //     if (item.type === "file") {
-        //         navigate(`/CaseLabDocuments/categories/${item.category}/${item.id}`)
-        //     } else {
-        //         if (res) {
-        //             navigate(`/CaseLabDocuments/categories${res}/${item.name}`);
-        //         } else {
-        //             navigate(`/CaseLabDocuments/categories/${item.name}`);
-        //         }
-        //     }
-        // } else {
-        //     navigate(`/CaseLabDocuments/documents/${item.id}`);
-        // }
-        //
-        // fileManagerStore.setSelectedItemsIds([]);
     }, [navigate, currentView, currentCategory, categories]);
 
     const handleItemClick = useCallback((itemId: string) => {
@@ -93,7 +66,7 @@ export const List = observer((props: ListProps) => {
     return (
         <ul className="items-list">
             {loading ? (
-                <Loading />
+                <Loading/>
             ) : (
                 <>
                     {items.map((item) => (

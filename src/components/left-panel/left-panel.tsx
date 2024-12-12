@@ -4,10 +4,9 @@ import "./left-panel-style.scss"
 import Button from "@mui/material/Button";
 import AddIcon from '@mui/icons-material/Add';
 import {observer} from "mobx-react-lite";
-import {Document} from "../../types/document";
 import {LeftPanelListItem} from "./left-panel-list-item";
 import {createFolder, moveDocument} from "../../services/yandex-disk-api";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {useSnackbarWithAction} from "../../hooks/use-snackbar-with-action";
 import {useTrimmedPath} from "../../hooks/use-trimmed-path";
 import {navigationStore, VIEW_TYPES} from "../../stores/navigation-store";
@@ -44,12 +43,6 @@ export const LeftPanel = observer(() => {
 
         fileManagerStore.moveFiles(file.category, targetCategory, file.id);
 
-        // setDocuments(prevDocuments => {
-        //     const newDocuments = prevDocuments.filter(doc => doc.id !== file.id);
-        //     const updatedDocument = {...file, category: targetCategory};
-        //     return [...newDocuments, updatedDocument];
-        // });
-
         enqueueSnackbar(
             "Объект успешно перенесен",
             () => {
@@ -72,13 +65,8 @@ export const LeftPanel = observer(() => {
     const handleCreate = useCallback(async () => {
         const res = getTrimmedPath("CaseLabDocuments/categories");
 
-        const createResponse = await createFolder(`CaseLabDocuments${res}/${nameFolder.trim()}`);
+        await createFolder(`CaseLabDocuments${res}/${nameFolder.trim()}`);
         setOpenCreateFolder(false);
-
-        // if (createResponse) {
-        //     const updateCategories = await fetchCategories();
-        //     fileManagerStore.setCategories(updateCategories);
-        // }
         navigate("..");
     }, [nameFolder]);
 

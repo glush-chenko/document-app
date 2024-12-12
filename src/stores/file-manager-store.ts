@@ -1,4 +1,4 @@
-import { makeAutoObservable, ObservableMap} from 'mobx';
+import {makeAutoObservable, ObservableMap} from 'mobx';
 import {Category} from "../types/category";
 import {Document} from "../types/document";
 
@@ -17,21 +17,14 @@ export interface FileObj {
 }
 
 class FileManagerStore {
-    categories: File[] = [];
-    documents: File[] = [];
     files: Map<string, FileObj[]> = new Map();
     trashItems: FileObj[] = [];
     currentCategoryPath = '';
     selectedItemsIds: string[] = []; //Categories or documents
-    selectedTrashItems: FileObj[] = []; //trash items
     loading = false;
 
     constructor() {
         makeAutoObservable(this);
-    }
-
-    setCategories(categories: File[]) {
-        this.categories = categories;
     }
 
     setCurrentCategoryPath(path: string) {
@@ -48,63 +41,6 @@ class FileManagerStore {
 
     setSelectedItemsIds(selectedItemsIds: string[]) {
         this.selectedItemsIds = selectedItemsIds;
-    }
-
-    setSelectedTrashItems(selectedItems: FileObj[]) {
-        this.selectedTrashItems = selectedItems;
-    }
-
-    findCategoryByName(categoryName: string) {
-        return this.categories.find(category => category.name === categoryName) || null;
-    }
-
-    removeCategoryByName () {
-        const findCategory = this.findCategoryByName(this.currentCategoryPath);
-        if (!findCategory) return;
-
-        this.categories = this.categories.filter(category => category.id !== findCategory.id);
-
-        return this.currentCategoryPath;
-    }
-
-    findItemByName(itemName: string) {
-        const category = this.categories.find(category => category.name === itemName);
-        if (category) {
-            return category;
-        }
-
-        const document = this.documents.find(document => document.name === itemName);
-        if (document) {
-            return document;
-        }
-
-        return  null;
-    }
-
-    findItemById(itemId: string) {
-        const category = this.categories.find(category => category.id === itemId);
-        if (category) {
-            return category;
-        }
-
-        const document = this.documents.find(document => document.id === itemId);
-        if (document) {
-            return document;
-        }
-
-        return null;
-    }
-
-    deleteDocument(file: File) {
-        if (!file) return;
-
-        this.documents = this.documents.filter(doc => doc.id !== file.id);
-    }
-
-    deleteCategory(file: File) {
-        if (!file) return;
-
-        this.categories = this.categories.filter(cat => cat.id !== file.id);
     }
 
     moveFiles(currentPath: string, newPath: string, id: string) {
@@ -127,6 +63,24 @@ class FileManagerStore {
         this.files = map;
     }
 
+    renameFile(currentPath: string, newName: string, id: string) {
+        let filesByCurrentPath = this.getFilesByPath(currentPath);
+        const targetFile = filesByCurrentPath.find((file) => file.id === id);
+
+        if (!targetFile) return;
+
+        targetFile.name = newName;
+
+        const map = new Map(this.files);
+        map.set(currentPath, filesByCurrentPath);
+        this.files = map;
+    }
+
+    getFileIndexById(path: string, id: string): number {
+        const filesByPath = this.getFilesByPath(path);
+        return filesByPath.findIndex(file => file.id === id);
+    }
+
     deleteFile(path: string, id: string) {
         const map = new Map(this.files);
         map.set(path, this.getFilesByPath(path).filter((file) => file.id !== id));
@@ -145,6 +99,23 @@ class FileManagerStore {
         return Array.from(this.files.values()).flat().filter((f) => f.type === "file");
     }
 
+    findFileById(id: string) {
+        let foundFile: FileObj | undefined;
+
+        this.files.forEach((filesArray) => {
+            const file = filesArray.find(file => file.id === id);
+            if (file) {
+                foundFile = file;
+            }
+        });
+
+        return foundFile;
+    }
+
+    findTrashItemById(id: string) {
+        return this.trashItems.find(item => item.id === id);
+    }
+
     replaceAllFiles(allFiles: ObservableMap<string, FileObj[]> | never[]) {
         this.files = new Map(allFiles);
     }
@@ -154,19 +125,7 @@ class FileManagerStore {
         map.set(path, files);
         this.files = map;
     }
-
-    updateDocumentsArray(documentId: string, newName: string, newPath: string) {
-        this.documents = this.documents.map(doc =>
-            doc.id === documentId ? { ...doc, name: newName, path: newPath} : doc
-        );
-    }
-
-    updateCategoriesArray(categoryId: string, newName: string, newPath: string) {
-        this.categories = this.categories.map(cat =>
-            cat.id === categoryId ? { ...cat, name: newName, path: newPath } : cat
-        );
-    }
 }
 
 export const fileManagerStore = new FileManagerStore();
-(window as any).fileManagerStore  = fileManagerStore;
+(window as any).fileManagerStore = fileManagerStore;
